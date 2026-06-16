@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Don't Wake the Monster!</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:#07070c;
+  color:#fff;
+  text-align:center;
+}
+
+.app{
+  max-width:760px;
+  margin:0 auto;
+  padding:20px;
+}
+
+h1{
+  font-size:2.3rem;
+  margin:10px 0;
+  color:#9cff9c;
+}
+
+.subtitle{
+  color:#aaa;
+  margin-bottom:20px;
+}
+
+.card{
+  background:#151522;
+  border:3px solid #33334d;
+  border-radius:20px;
+  padding:20px;
+  margin:20px 0;
+  box-shadow:0 0 25px #000;
+}
+
+button{
+  background:#7dff7d;
+  color:#081008;
+  border:none;
+  border-radius:14px;
+  padding:14px 22px;
+  margin:8px;
+  font-size:1.1rem;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button.secondary{
+  background:#33334d;
+  color:#fff;
+}
+
+button.danger{
+  background:#ff4b4b;
+  color:#fff;
+}
+
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+.monster{
+  width:180px;
+  height:180px;
+  margin:10px auto;
+  image-rendering:pixelated;
+  position:relative;
+}
+
+.pixel{
+  width:20px;
+  height:20px;
+  position:absolute;
+  border-radius:4px;
+}
+
+.eye{
+  background:#fff;
+}
+
+.pupil{
+  background:#000;
+}
+
+.mouth{
+  background:#000;
+}
+
+.name{
+  font-size:1.6rem;
+  color:#ffd35a;
+  margin:10px 0;
+}
+
+.mission{
+  font-size:1.4rem;
+  line-height:1.45;
+}
+
+.lives{
+  font-size:1.8rem;
+  margin:12px 0;
+}
+
+.warningText{
+  font-size:1.7rem;
+  color:#ff6666;
+  min-height:42px;
+  font-weight:bold;
+}
+
+.meterOuter{
+  width:100%;
+  height:34px;
+  background:#222;
+  border-radius:20px;
+  overflow:hidden;
+  border:2px solid #555;
+  margin:15px 0;
+}
+
+.meterInner{
+  width:0%;
+  height:100%;
+  background:linear-gradient(90deg,#48ff48,#fff748,#ff3b3b);
+  transition:width .08s linear;
+}
+
+.awakeOuter{
+  width:100%;
+  height:28px;
+  background:#111;
+  border-radius:20px;
+  overflow:hidden;
+  border:2px solid #444;
+  margin:15px 0;
+}
+
+.awakeInner{
+  width:0%;
+  height:100%;
+  background:#ff3333;
+  transition:width .2s;
+}
+
+.small{
+  color:#aaa;
+  font-size:.9rem;
+}
+
+.hidden{
+  display:none;
+}
+
+.flash{
+  animation:flash .4s;
+}
+
+@keyframes flash{
+  0%{background:#ff0000}
+  100%{background:#07070c}
+}
+
+.shake{
+  animation:shake .25s;
+}
+
+@keyframes shake{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(8px,0)}
+  50%{transform:translate(-8px,0)}
+  75%{transform:translate(8px,0)}
+  100%{transform:translate(0,0)}
+}
+
+.settings{
+  text-align:left;
+  background:#0e0e17;
+  padding:15px;
+  border-radius:14px;
+  margin-top:15px;
+}
+
+label{
+  display:block;
+  margin:10px 0 4px;
+}
+
+input[type=range]{
+  width:100%;
+}
+
+.completed{
+  color:#7dff7d;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<h1>DON'T WAKE THE MONSTER!</h1>
+<div class="subtitle">A silent party game for 2–8 players</div>
+
+<div class="lives" id="lives">❤️❤️❤️</div>
+
+<div class="card" id="menuScreen">
+  <div id="menuMonster"></div>
+  <h2>Ready to sneak?</h2>
+  <p>The monster cannot see you.</p>
+  <p>It can only hear you.</p>
+  <button onclick="newRound()">FLIP MISSION CARD</button>
+  <button class="secondary" onclick="toggleSettings()">SETTINGS</button>
+
+  <div class="settings hidden" id="settings">
+    <label>Extra Sensitivity</label>
+    <input type="range" id="sensitivityBoost" min="0" max="40" value="12">
+    <p class="small">Turn this up if the monster is too deaf. Turn it down if it hears everything.</p>
+
+    <label>
+      <input type="checkbox" id="darkMode" checked>
+      Dark scary mode
+    </label>
+  </div>
+</div>
+
+<div class="card hidden" id="missionScreen">
+  <div id="missionMonster"></div>
+  <div class="name" id="monsterName"></div>
+  <p class="small" id="monsterInfo"></p>
+  <h2>YOUR MISSION IS:</h2>
+  <div class="mission" id="missionText"></div>
+  <p class="small">Everyone must stay silent. Laughing, stairs, doors and dropped objects all count.</p>
+  <button onclick="prepareListening()">I'M READY...</button>
+  <button class="secondary" onclick="newRound()">NEW CARD</button>
+</div>
+
+<div class="card hidden" id="listenScreen">
+  <div id="listenMonster"></div>
+  <div class="name" id="listenName"></div>
+  <div class="warningText" id="warningText">Calibrating room...</div>
+
+  <div class="meterOuter">
+    <div class="meterInner" id="meter"></div>
+  </div>
+
+  <p>Monster awake meter</p>
+  <div class="awakeOuter">
+    <div class="awakeInner" id="awakeMeter"></div>
+  </div>
+
+  <p id="noiseCount">Noises heard: 0</p>
+
+  <button onclick="missionComplete()">MISSION COMPLETE</button>
+  <button class="danger" onclick="stopListening();showMenu()">STOP</button>
+</div>
+
+<div class="card hidden" id="resultScreen">
+  <h2 id="resultTitle"></h2>
+  <p id="resultText"></p>
+  <button onclick="newRound()">NEXT MISSION</button>
+  <button class="secondary" onclick="showMenu()">MENU</button>
+</div>
+
+</div>
+
+<script>
+const monsters = [
+  {name:"Zorg", colour:"#55ff66", hearing:1.0, warnings:3, phrase:"I hear you..."},
+  {name:"Bleep", colour:"#65d7ff", hearing:1.2, warnings:3, phrase:"Tiny sound detected."},
+  {name:"Grumblor", colour:"#9d6bff", hearing:0.8, warnings:4, phrase:"Did something move?"},
+  {name:"Clank-Eater", colour:"#ff9d3b", hearing:1.3, warnings:3, phrase:"Metal! I heard metal!"},
+  {name:"Mog the Mute", colour:"#ff5ac8", hearing:0.9, warnings:3, phrase:"Shhh..."},
+  {name:"Captain Earwig", colour:"#baff39", hearing:1.5, warnings:2, phrase:"I hear EVERYTHING."},
+  {name:"Blobbo", colour:"#46ffd2", hearing:0.7, warnings:4, phrase:"Blob... heard... noise..."},
+  {name:"Sneak Snatcher", colour:"#ff5353", hearing:1.2, warnings:3, phrase:"I know you're there."},
+  {name:"The Kitchen Beast", colour:"#ffd84a", hearing:1.1, warnings:3, phrase:"Plates are my favourite."},
+  {name:"Moon Goblin", colour:"#a4ff8c", hearing:1.0, warnings:3, phrase:"Who's creeping?"},
+  {name:"Tin Foil Terror", colour:"#cfcfcf", hearing:1.4, warnings:3, phrase:"Rustle rustle!"},
+  {name:"Fork Face", colour:"#82aaff", hearing:1.2, warnings:3, phrase:"Clink! I heard a clink!"},
+  {name:"The Stair Stalker", colour:"#ff7d7d", hearing:1.1, warnings:3, phrase:"Creaky stairs!"},
+  {name:"Door Doom", colour:"#d58cff", hearing:1.3, warnings:3, phrase:"Was that a door?"},
+  {name:"The Laugh Gobbler", colour:"#73ffb1", hearing:1.2, warnings:3, phrase:"No laughing!"},
+  {name:"Mug Monster", colour:"#ffffff", hearing:1.0, warnings:3, phrase:"Careful with that mug."},
+  {name:"The Clatter King", colour:"#ffbf69", hearing:1.4, warnings:2, phrase:"CLATTER!"},
+  {name:"Spoon Snooper", colour:"#c9ff4a", hearing:1.2, warnings:3, phrase:"Spoons betray you."},
+  {name:"Key Rattler", colour:"#99f", hearing:1.3, warnings:3, phrase:"Keys! Keys! Keys!"},
+  {name:"Mother Shush", colour:"#ff99dd", hearing:1.0, warnings:3, phrase:"Silence, children..."}
+];
+
+const missions = [
+  "Place a fork and spoon inside a ceramic mug.",
+  "Put your door keys inside a saucepan.",
+  "Stack three plates on the table.",
+  "Put five coins into a glass.",
+  "Place a spoon across two mugs like a bridge.",
+  "Put a fork, spoon and teaspoon inside a bowl.",
+  "Wrap your keys in tin foil and place them on a plate.",
+  "Put a saucepan lid onto a saucepan.",
+  "Place three mugs in a line on the table.",
+  "Put two spoons and two forks into a glass.",
+  "Place a TV remote on top of a plate.",
+  "Put a metal tin on the table and place keys inside it.",
+  "Balance a spoon on top of a mug.",
+  "Place four coins on a saucepan lid.",
+  "Put a fork inside a mug, then place the mug on a plate.",
+  "Stack two bowls and place a spoon on top.",
+  "Place a tin can inside a saucepan.",
+  "Put three teaspoons into a ceramic bowl.",
+  "Place your keys on a dinner plate.",
+  "Put a fork and a coin inside a glass.",
+  "Carry a plate to the table and place a spoon on it.",
+  "Put a mug inside a saucepan.",
+  "Place two cans next to each other without clanking them.",
+  "Put a spoon into a glass, then move the glass to the table.",
+  "Stack one plate, one bowl and one mug.",
+  "Place keys inside a mug and put the mug on a plate.",
+  "Put three coins into a saucepan.",
+  "Place a fork under a mug handle.",
+  "Put a spoon inside a tin can.",
+  "Place a saucepan lid on the floor, then put a mug on it."
+];
+
+let currentMonster;
+let currentMission;
+let lives = 3;
+let audioContext;
+let analyser;
+let microphone;
+let dataArray;
+let listening = false;
+let baseline = 0;
+let threshold = 0;
+let noises = 0;
+let awake = 0;
+let lastNoiseTime = 0;
+let animationFrame;
+
+function drawMonster(targetId, monster, mood="sleepy"){
+  const el = document.getElementById(targetId);
+  el.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "monster";
+
+  function p(x,y,c,w=1,h=1,cls=""){
+    const d = document.createElement("div");
+    d.className = "pixel " + cls;
+    d.style.left = (x*20)+"px";
+    d.style.top = (y*20)+"px";
+    d.style.width = (w*20)+"px";
+    d.style.height = (h*20)+"px";
+    d.style.background = c;
+    box.appendChild(d);
+  }
+
+  const c = monster.colour;
+
+  p(3,1,c,3,1);
+  p(2,2,c,5,1);
+  p(1,3,c,7,4);
+  p(2,7,c,5,1);
+  p(3,8,c,1,1);
+  p(5,8,c,1,1);
+
+  p(0,4,c,1,2);
+  p(8,4,c,1,2);
+
+  p(2,0,c,1,1);
+  p(6,0,c,1,1);
+
+  p(3,4,"#fff",1,1,"eye");
+  p(5,4,"#fff",1,1,"eye");
+
+  if(mood==="angry"){
+    p(3,4,"#000",1,1,"pupil");
+    p(5,4,"#000",1,1,"pupil");
+    p(3,6,"#000",3,1,"mouth");
+  }else if(mood==="found"){
+    p(2,3,"#fff",2,2,"eye");
+    p(5,3,"#fff",2,2,"eye");
+    p(3,4,"#000",1,1,"pupil");
+    p(6,4,"#000",1,1,"pupil");
+    p(2,6,"#000",5,1,"mouth");
+    p(3,7,"#000",3,1,"mouth");
+  }else{
+    p(3,4,"#000",1,1,"pupil");
+    p(5,4,"#000",1,1,"pupil");
+    p(3,6,"#000",3,1,"mouth");
+  }
+
+  el.appendChild(box);
+}
+
+function updateLives(){
+  document.getElementById("lives").innerHTML = "❤️".repeat(lives) + "🖤".repeat(3-lives);
+}
+
+function hideAll(){
+  ["menuScreen","missionScreen","listenScreen","resultScreen"].forEach(id=>{
+    document.getElementById(id).classList.add("hidden");
+  });
+}
+
+function showMenu(){
+  stopListening();
+  hideAll();
+  document.getElementById("menuScreen").classList.remove("hidden");
+  drawMonster("menuMonster", monsters[Math.floor(Math.random()*monsters.length)]);
+  updateLives();
+}
+
+function toggleSettings(){
+  document.getElementById("settings").classList.toggle("hidden");
+}
+
+function newRound(){
+  stopListening();
+  currentMonster = monsters[Math.floor(Math.random()*monsters.length)];
+  currentMission = missions[Math.floor(Math.random()*missions.length)];
+
+  hideAll();
+  document.getElementById("missionScreen").classList.remove("hidden");
+
+  drawMonster("missionMonster", currentMonster);
+  document.getElementById("monsterName").textContent = currentMonster.name;
+  document.getElementById("monsterInfo").textContent =
+    "Hearing: " + currentMonster.hearing.toFixed(1) +
+    " | Warnings before caught: " + currentMonster.warnings;
+
+  document.getElementById("missionText").textContent = currentMission;
+}
+
+async function prepareListening(){
+  hideAll();
+  document.getElementById("listenScreen").classList.remove("hidden");
+
+  drawMonster("listenMonster", currentMonster);
+  document.getElementById("listenName").textContent = currentMonster.name;
+  document.getElementById("warningText").textContent = "Calibrating room...";
+  document.getElementById("noiseCount").textContent = "Noises heard: 0";
+  document.getElementById("awakeMeter").style.width = "0%";
+  awake = 0;
+  noises = 0;
+
+  try{
+    await startMic();
+    setTimeout(()=>{
+      document.getElementById("warningText").textContent = "3...";
+      setTimeout(()=>{
+        document.getElementById("warningText").textContent = "2...";
+        setTimeout(()=>{
+          document.getElementById("warningText").textContent = "1...";
+          setTimeout(()=>{
+            document.getElementById("warningText").textContent = currentMonster.name + " is listening...";
+            listening = true;
+          },700);
+        },700);
+      },700);
+    },1800);
+  }catch(e){
+    document.getElementById("warningText").textContent = "Microphone blocked. Allow mic access.";
+  }
+}
+
+async function startMic(){
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioContext.createAnalyser();
+  microphone = audioContext.createMediaStreamSource(stream);
+  analyser.fftSize = 256;
+  microphone.connect(analyser);
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  listening = false;
+  baseline = 0;
+  let samples = [];
+
+  const calibrateStart = Date.now();
+
+  function calibrate(){
+    analyser.getByteFrequencyData(dataArray);
+    let volume = getVolume();
+    samples.push(volume);
+    document.getElementById("meter").style.width = Math.min(volume*2,100)+"%";
+
+    if(Date.now() - calibrateStart < 1500){
+      animationFrame = requestAnimationFrame(calibrate);
+    }else{
+      baseline = samples.reduce((a,b)=>a+b,0) / samples.length;
+      const boost = Number(document.getElementById("sensitivityBoost").value);
+      threshold = baseline + boost;
+      monitor();
+    }
+  }
+
+  calibrate();
+}
+
+function getVolume(){
+  let sum = 0;
+  for(let i=0;i<dataArray.length;i++){
+    sum += dataArray[i];
+  }
+  return sum / dataArray.length;
+}
+
+function monitor(){
+  if(!analyser) return;
+
+  analyser.getByteFrequencyData(dataArray);
+  const volume = getVolume();
+  const displayVolume = Math.min(volume * 2, 100);
+  document.getElementById("meter").style.width = displayVolume + "%";
+
+  if(listening){
+    const adjustedThreshold = threshold / currentMonster.hearing;
+    const now = Date.now();
+
+    if(volume > adjustedThreshold && now - lastNoiseTime > 1100){
+      lastNoiseTime = now;
+      registerNoise(volume, adjustedThreshold);
+    }
+  }
+
+  animationFrame = requestAnimationFrame(monitor);
+}
+
+function registerNoise(volume, adjustedThreshold){
+  noises++;
+
+  let strength = Math.min(45, 15 + ((volume - adjustedThreshold) * 1.8));
+  awake += strength;
+  awake = Math.min(awake, 100);
+
+  document.getElementById("awakeMeter").style.width = awake + "%";
+  document.getElementById("noiseCount").textContent = "Noises heard: " + noises;
+
+  document.body.classList.add("flash");
+  document.getElementById("listenScreen").classList.add("shake");
+
+  setTimeout(()=>{
+    document.body.classList.remove("flash");
+    document.getElementById("listenScreen").classList.remove("shake");
+  },300);
+
+  if(noises === 1){
+    drawMonster("listenMonster", currentMonster, "angry");
+    document.getElementById("warningText").textContent = "1 — " + currentMonster.phrase;
+    beep(180,0.15);
+  }else if(noises === 2){
+    drawMonster("listenMonster", currentMonster, "angry");
+    document.getElementById("warningText").textContent = "2 — I know where you are...";
+    beep(120,0.2);
+  }else if(noises >= currentMonster.warnings || awake >= 100){
+    caught();
+  }else{
+    document.getElementById("warningText").textContent = noises + " — Stay silent!";
+    beep(100,0.2);
+  }
+}
+
+function caught(){
+  listening = false;
+  drawMonster("listenMonster", currentMonster, "found");
+  document.getElementById("warningText").textContent = "I FOUND YOU!";
+  beep(70,0.5);
+
+  lives--;
+  if(lives < 0) lives = 0;
+  updateLives();
+
+  setTimeout(()=>{
+    hideAll();
+    document.getElementById("resultScreen").classList.remove("hidden");
+
+    if(lives <= 0){
+      document.getElementById("resultTitle").textContent = "GAME OVER!";
+      document.getElementById("resultText").textContent = currentMonster.name + " caught everyone!";
+      lives = 3;
+    }else{
+      document.getElementById("resultTitle").textContent = "YOU WERE CAUGHT!";
+      document.getElementById("resultText").textContent = "Lose one life. The mission card is lost.";
+    }
+
+    stopListening();
+    updateLives();
+  },1400);
+}
+
+function missionComplete(){
+  stopListening();
+  hideAll();
+  document.getElementById("resultScreen").classList.remove("hidden");
+  document.getElementById("resultTitle").textContent = "MISSION COMPLETE!";
+  document.getElementById("resultText").textContent = "You escaped with the card. Keep it as one point.";
+}
+
+function stopListening(){
+  listening = false;
+
+  if(animationFrame){
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+
+  if(audioContext){
+    audioContext.close();
+    audioContext = null;
+  }
+
+  analyser = null;
+  microphone = null;
+}
+
+function beep(freq,duration){
+  if(!audioContext) return;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.frequency.value = freq;
+  osc.type = "sawtooth";
+
+  gain.gain.value = 0.08;
+
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  osc.start();
+  osc.stop(audioContext.currentTime + duration);
+}
+
+showMenu();
+</script>
+</body>
+</html>
