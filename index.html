@@ -344,7 +344,12 @@ input[type=range]{
     <div class="awakeInner" id="awakeMeter"></div>
   </div>
 
-  <p id="noiseCount">Noises heard: 0</p>
+  <div style="margin:18px auto;max-width:620px;padding:14px;border:2px solid #444;border-radius:14px;background:#0f0f18">
+<h3 style="margin:0 0 8px;color:#ffd35a">📋 CURRENT MISSION</h3>
+<div id="liveMission" style="font-size:1.35rem;line-height:1.4;font-weight:bold"></div>
+</div>
+
+<p id="noiseCount">Noises heard: 0</p>
 
   <div class="debug" id="debugBox"></div>
 
@@ -571,6 +576,7 @@ function newRound(){
     " | Warnings before caught: " + currentMonster.warnings;
 
   document.getElementById("missionText").textContent = currentMission;
+document.getElementById("liveMission").textContent = currentMission;
 }
 
 async function prepareListening(){
