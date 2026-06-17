@@ -285,6 +285,7 @@ input[type=range]{
   <button onclick="newRound()">FLIP MISSION CARD</button>
   <button class="secondary" onclick="toggleSettings()">SETTINGS</button>
   <button class="secondary" onclick="toggleRules()">📖 RULES</button>
+  <button class="secondary danger" onclick="resetGame()">🔄 RESET GAME</button>
 
   <div class="settings hidden" id="settings">
     <label>Monster Hearing</label>
@@ -314,7 +315,7 @@ input[type=range]{
     </label>
   </div>
 
-  <div class="settings hidden" id="rulesBox">
+  <div class="settings" id="rulesBox">
     <h2>📖 How to Play</h2>
     <h3>Before You Start</h3>
     <p>Place these items on the table where everyone can reach them:</p>
@@ -916,6 +917,19 @@ function beep(freq,duration){
 
   osc.start();
   osc.stop(audioContext.currentTime + duration);
+}
+
+
+
+function resetGame(){
+  if(!confirm("Start a new game?\n\nThis will reset all lives and return to the main menu.")) return;
+  stopListening();
+  lives=3;
+  awake=0;
+  noises=0;
+  reactionStage=0;
+  updateLives();
+  showMenu();
 }
 
 applyMode();
