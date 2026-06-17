@@ -284,6 +284,7 @@ input[type=range]{
   <p>It can only hear you.</p>
   <button onclick="newRound()">FLIP MISSION CARD</button>
   <button class="secondary" onclick="toggleSettings()">SETTINGS</button>
+  <button class="secondary" onclick="toggleRules()">📖 RULES</button>
 
   <div class="settings hidden" id="settings">
     <label>Monster Hearing</label>
@@ -311,6 +312,30 @@ input[type=range]{
       <input type="checkbox" id="darkMode" checked onchange="applyMode()">
       Dark scary mode
     </label>
+  </div>
+
+  <div class="settings hidden" id="rulesBox">
+    <h2>📖 How to Play</h2>
+    <h3>Before You Start</h3>
+    <p>Place these items on the table where everyone can reach them:</p>
+    <ul>
+      <li>3 ceramic mugs</li><li>3 dinner plates</li><li>2 ceramic bowls</li>
+      <li>3 tablespoons</li><li>3 teaspoons</li><li>2 forks</li>
+      <li>5 coins</li><li>1 set of door keys</li><li>1 tin of food</li>
+      <li>1 empty metal tin</li><li>1 saucepan with lid</li>
+      <li>1 TV remote</li><li>1 sheet of tin foil</li>
+    </ul>
+    <h3>Taking a Turn</h3>
+    <ol>
+      <li>Press <b>Flip Mission Card</b>.</li>
+      <li>Read the mission.</li>
+      <li>Press <b>I'm Ready</b>.</li>
+      <li>Complete the mission as quietly as possible.</li>
+      <li>If successful, press <b>Mission Complete</b> and score 1 point.</li>
+    </ol>
+    <h3>Golden Rule</h3>
+    <p><b>No talking once the mission begins.</b></p>
+    <p>The Monster cannot see you... it can only hear you!</p>
   </div>
 </div>
 
@@ -554,6 +579,10 @@ function showMenu(){
 
 function toggleSettings(){
   document.getElementById("settings").classList.toggle("hidden");
+}
+
+function toggleRules(){
+  document.getElementById("rulesBox").classList.toggle("hidden");
 }
 
 function applyMode(){
