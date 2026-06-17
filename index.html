@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Don't Wake the Monster! V2</title>
+<title>Don't Wake the Monster! V3 Test</title>
 
 <style>
 *{box-sizing:border-box}
@@ -272,7 +272,7 @@ input[type=range]{
 <div class="app">
 
 <h1>DON'T WAKE THE MONSTER!</h1>
-<div class="subtitle">V2 prototype — quiet missions, noisy objects, microphone monster</div>
+<div class="subtitle">V3 test — accumulating Awake Meter</div>
 
 <div class="lives" id="lives">❤️❤️❤️</div>
 
@@ -579,11 +579,10 @@ function newRound(){
   drawMonster("missionMonster", currentMonster);
   document.getElementById("monsterName").textContent = currentMonster.name;
   document.getElementById("monsterInfo").textContent =
-    "Hearing: " + currentMonster.hearing.toFixed(2) +
-    "";
+    "Hearing: " + currentMonster.hearing.toFixed(2);
 
   document.getElementById("missionText").textContent = currentMission;
-document.getElementById("liveMission").textContent = currentMission;
+if(document.getElementById("liveMission")) document.getElementById("liveMission").textContent = currentMission;
 }
 
 async function prepareListening(){
@@ -593,7 +592,7 @@ async function prepareListening(){
   drawMonster("listenMonster", currentMonster);
   document.getElementById("listenName").textContent = currentMonster.name;
   document.getElementById("warningText").textContent = "Allow microphone...";
-  document.getElementById("noiseCount").textContent = "Noises heard: 0";
+  document.getElementById("noiseCount").textContent = "Monster Awake: 0%";
   document.getElementById("awakeMeter").style.width = "0%";
   document.getElementById("meter").style.width = "0%";
   document.getElementById("debugBox").classList.toggle("show", document.getElementById("debugMode").checked);
@@ -754,21 +753,50 @@ function monitor(){
 }
 
 function registerNoise(stats, sharpness){
- const ratio=Math.max(stats.rms/thresholdRMS,stats.peak/thresholdPeak);
- let add=5;
- if(ratio>1.4)add=10;
- if(ratio>2)add=18;
- if(ratio>3)add=30;
- if(ratio>4)add=45;
- awake=Math.min(awake+add,awakeLimit);
- const pct=Math.round((awake/awakeLimit)*100);
- document.getElementById('awakeMeter').style.width=pct+'%';
- document.getElementById('noiseCount').textContent='Monster Awake: '+pct+'%';
- drawMonster('listenMonster',currentMonster,'angry');
- if(stage<1 && pct>=25){stage=1;document.getElementById('warningText').textContent='👂 Did I hear something?';}
- else if(stage<2 && pct>=50){stage=2;document.getElementById('warningText').textContent='😠 Who\'s there?';}
- else if(stage<3 && pct>=75){stage=3;document.getElementById('warningText').textContent='👀 I know you\'re here...';}
- if(awake>=awakeLimit)caught();
+  const ratio = Math.max(stats.rms / thresholdRMS, stats.peak / thresholdPeak);
+
+  let add = 5;       // tiny clink
+  if(ratio > 1.4) add = 10;
+  if(ratio > 2.0) add = 18;
+  if(ratio > 3.0) add = 30;
+  if(ratio > 4.0) add = 45;
+
+  awake = Math.min(awake + add, awakeLimit);
+
+  const pct = Math.round((awake / awakeLimit) * 100);
+  document.getElementById("awakeMeter").style.width = pct + "%";
+  document.getElementById("noiseCount").textContent = "Monster Awake: " + pct + "%";
+
+  document.body.classList.add("flash");
+  document.getElementById("listenScreen").classList.add("shake");
+
+  setTimeout(()=>{
+    document.body.classList.remove("flash");
+    document.getElementById("listenScreen").classList.remove("shake");
+  },300);
+
+  drawMonster("listenMonster", currentMonster, "angry");
+
+  if(stage < 1 && pct >= 25){
+    stage = 1;
+    document.getElementById("warningText").textContent = "👂 Did I hear something?";
+    beep(180,.15);
+  }else if(stage < 2 && pct >= 50){
+    stage = 2;
+    document.getElementById("warningText").textContent = "😠 Who’s there?";
+    beep(150,.2);
+  }else if(stage < 3 && pct >= 75){
+    stage = 3;
+    document.getElementById("warningText").textContent = "👀 I know you’re here...";
+    beep(120,.2);
+  }else{
+    document.getElementById("warningText").textContent = "Tiny sound... the monster stirs.";
+    beep(210,.1);
+  }
+
+  if(awake >= awakeLimit){
+    caught();
+  }
 }
 
 function caught(){
