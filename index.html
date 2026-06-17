@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Don't Wake the Monster! V2</title>
+<title>Don't Wake the Monster! V2.4</title>
 
 <style>
 *{box-sizing:border-box}
@@ -272,7 +272,8 @@ input[type=range]{
 <div class="app">
 
 <h1>DON'T WAKE THE MONSTER!</h1>
-<div class="subtitle">V2 prototype — quiet missions, noisy objects, microphone monster</div>
+<div class="subtitle">V2.4 — accumulating Awake Meter test</div>
+<div class="small">Build V2.4</div>
 
 <div class="lives" id="lives">❤️❤️❤️</div>
 
@@ -349,7 +350,7 @@ input[type=range]{
 <div id="liveMission" style="font-size:1.35rem;line-height:1.4;font-weight:bold"></div>
 </div>
 
-<p id="noiseCount">Monster Awake: 0%</p>
+<p id="noiseCount">Noises heard: 0</p>
 
   <div class="debug" id="debugBox"></div>
 
@@ -450,15 +451,12 @@ let thresholdRMS = 0;
 let thresholdPeak = 0;
 let noises = 0;
 let awake = 0;
-  stage=0;
 let lastNoiseTime = 0;
 let animationFrame = null;
 let recentRMS = [];
 let calibrated = false;
-let awake=0;
-let awakeMax=100;
-let awakeLimit=100;
-let stage=0;
+let reactionStage = 0;
+const awakeMax = 100;
 
 document.getElementById("calibrationTime").addEventListener("input",()=>{
   document.getElementById("calTimeText").textContent = document.getElementById("calibrationTime").value;
@@ -578,7 +576,7 @@ function newRound(){
   document.getElementById("monsterName").textContent = currentMonster.name;
   document.getElementById("monsterInfo").textContent =
     "Hearing: " + currentMonster.hearing.toFixed(2) +
-    "";
+    " | Awake Meter reaches 100% = caught";
 
   document.getElementById("missionText").textContent = currentMission;
 document.getElementById("liveMission").textContent = currentMission;
@@ -598,6 +596,7 @@ async function prepareListening(){
 
   awake = 0;
   noises = 0;
+  reactionStage = 0;
   recentRMS = [];
   calibrated = false;
 
@@ -752,46 +751,64 @@ function monitor(){
 }
 
 function registerNoise(stats, sharpness){
+  noises++;
 
-  // Keep the existing microphone detection,
-  // but make the red Awake Meter accumulate.
-  const ratio=Math.max(stats.rms/thresholdRMS,stats.peak/thresholdPeak);
+  // V2.4: Accumulating Awake Meter.
+  // The microphone detection is unchanged.
+  // Every detected sound adds to the red Awake Meter.
+  // The Awake Meter never drops back during a mission.
 
-  let add=4;
-  if(ratio>1.3) add=8;
-  if(ratio>2.0) add=14;
-  if(ratio>3.0) add=22;
-  if(ratio>4.0) add=35;
+  const ratio = Math.max(stats.rms / thresholdRMS, stats.peak / thresholdPeak);
 
-  awake=Math.min(awake+add,awakeMax);
+  let add = 4;          // tiny click
+  if(ratio > 1.3) add = 8;
+  if(ratio > 2.0) add = 14;
+  if(ratio > 3.0) add = 24;
+  if(ratio > 4.0) add = 38;
 
-  const pct=Math.round((awake/awakeMax)*100);
+  // Sharp clinks add a little extra danger
+  add += Math.min(8, Math.max(0, sharpness) * 400);
+  add = Math.round(add);
 
-  document.getElementById("awakeMeter").style.width=pct+"%";
-  document.getElementById("noiseCount").textContent="Monster Awake: "+pct+"%";
+  awake += add;
+  awake = Math.min(awake, awakeMax);
+
+  const pct = Math.round((awake / awakeMax) * 100);
+
+  document.getElementById("awakeMeter").style.width = pct + "%";
+  document.getElementById("noiseCount").textContent =
+    "Monster Awake: " + pct + "%  |  Last sound +" + add + "%";
 
   document.body.classList.add("flash");
   document.getElementById("listenScreen").classList.add("shake");
+
   setTimeout(()=>{
-      document.body.classList.remove("flash");
-      document.getElementById("listenScreen").classList.remove("shake");
+    document.body.classList.remove("flash");
+    document.getElementById("listenScreen").classList.remove("shake");
   },300);
 
-  if(pct>=25 && pct<50){
-      document.getElementById("warningText").textContent="👂 Did I hear something?";
-      drawMonster("listenMonster",currentMonster,"angry");
-  }else if(pct>=50 && pct<75){
-      document.getElementById("warningText").textContent="😠 Who's there?";
-      drawMonster("listenMonster",currentMonster,"angry");
-  }else if(pct>=75 && pct<100){
-      document.getElementById("warningText").textContent="👀 I know you're here...";
-      drawMonster("listenMonster",currentMonster,"angry");
+  drawMonster("listenMonster", currentMonster, "angry");
+
+  if(pct >= 100){
+    caught();
+    return;
   }
 
-  beep(170,0.12);
-
-  if(awake>=awakeMax){
-      caught();
+  if(pct >= 75 && reactionStage < 3){
+    reactionStage = 3;
+    document.getElementById("warningText").textContent = "👀 I know you’re here...";
+    beep(100,0.22);
+  }else if(pct >= 50 && reactionStage < 2){
+    reactionStage = 2;
+    document.getElementById("warningText").textContent = "😠 Who’s there?";
+    beep(130,0.2);
+  }else if(pct >= 25 && reactionStage < 1){
+    reactionStage = 1;
+    document.getElementById("warningText").textContent = "👂 Did I hear something?";
+    beep(180,0.15);
+  }else{
+    document.getElementById("warningText").textContent = "Tiny sound... stay silent.";
+    beep(210,0.1);
   }
 }
 
